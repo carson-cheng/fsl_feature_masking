@@ -29,7 +29,7 @@ class PrototypicalNetworks(FewShotClassifier):
         Classification scores are the negative of euclidean distances.
         """
         # Extract the features of query images
-        query_features = self.compute_features(query_images) * self.mask
+        query_features = self.compute_features(query_images) #* self.mask
         self._raise_error_if_features_are_multi_dimensional(query_features)
 
         # Compute the euclidean distance from queries to prototypes
