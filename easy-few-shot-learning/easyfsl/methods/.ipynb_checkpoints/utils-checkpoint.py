@@ -2,7 +2,8 @@ from collections import OrderedDict
 
 import torch
 from torch import Tensor
-
+from sklearn.svm import LinearSVC
+from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
 '''
 def compute_prototypes(support_features: Tensor, support_labels: Tensor) -> Tensor:
     """
@@ -37,7 +38,10 @@ def compute_prototypes(support_features: Tensor, support_labels: Tensor) -> Tens
     """
     n_way = len(torch.unique(support_labels))
     feature_dim = support_features.shape[1]
-
+    #svc = LinearSVC()
+    #svc.fit(support_features.numpy(), support_labels.numpy())
+    svc = mutual_info_classif(support_features.cpu().numpy(), support_labels.cpu().numpy(), n_jobs=-1)
+    #svc.fit(support_features.numpy(), support_labels.numpy())
     # Compute prototypes (mean feature vectors for each class)
     prototypes = torch.cat(
         [
@@ -68,7 +72,20 @@ def compute_prototypes(support_features: Tensor, support_labels: Tensor) -> Tens
                 max_inter_var = inter_var
 
     # Compute mask as sigmoid(max_inter_var / intra_variance)
-    mask = torch.sigmoid(0.1 * max_inter_var / intra_variance / torch.mean(support_features, dim=0)) # the 0.1 is a hyperparameter called the temperature
+    mask = torch.sigmoid(max_inter_var / intra_variance / torch.mean(support_features, dim=0)) # the 0.1 is a hyperparameter called the temperature
+    #mask = torch.sigmoid(max_inter_var / intra_variance) # the 0.1 is a hyperparameter called the temperature
+    #mask = (max_inter_var / intra_variance) > 1
+    #mask = torch.abs(torch.from_numpy(svc.coef_).to(torch.float32))
+    #mask = torch.sigmoid(10 * torch.mean(mask, dim=0))
+    #threshold = torch.min(torch.topk(torch.tensor(svc), 512).values).item()
+    mask = (torch.from_numpy(svc).to(torch.float32) > 0.2)
+    #mask = mask ** 0.5
+    
+    #svc = LinearSVC() # try to use gridsearchcv
+    #svc.fit((support_features*mask).numpy(), support_labels.numpy())
+    
+    #print(mask)
+    #mask = torch.sigmoid(max_inter_var / intra_variance)
     # it controls the shape of that activation function
 
     # Apply the mask to the prototypes
@@ -76,10 +93,8 @@ def compute_prototypes(support_features: Tensor, support_labels: Tensor) -> Tens
     #mask = torch.ones_like(mask) # UNCOMMENT this line to evaluate the baseline
     
     #mask = torch.sigmoid(1 / torch.mean(support_features, dim=0))
-    masked_prototypes = prototypes * mask
-
-    return masked_prototypes, mask
-
+    masked_prototypes = prototypes.cuda() * mask.cuda()
+    return masked_prototypes, mask, svc
 
 def entropy(logits: Tensor) -> Tensor:
     """

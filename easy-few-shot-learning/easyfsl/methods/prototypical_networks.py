@@ -4,7 +4,7 @@ at https://github.com/jakesnell/prototypical-networks
 """
 
 from torch import Tensor
-
+import torch
 from .few_shot_classifier import FewShotClassifier
 
 
@@ -29,11 +29,16 @@ class PrototypicalNetworks(FewShotClassifier):
         Classification scores are the negative of euclidean distances.
         """
         # Extract the features of query images
-        query_features = self.compute_features(query_images) * self.mask
+        query_features = self.compute_features(query_images) #* self.mask.cuda()
         self._raise_error_if_features_are_multi_dimensional(query_features)
 
         # Compute the euclidean distance from queries to prototypes
         scores = self.l2_distance_to_prototypes(query_features)
+        #index = self.svc.predict(query_features.numpy())
+        #scores = torch.zeros_like(scores)
+        #for item in range(len(index)):
+        #    scores[item][index[item]] = 1.0
+        #print(self.softmax_if_specified(scores))
         #scores = self.cosine_distance_to_prototypes(query_features)
         return self.softmax_if_specified(scores)
 

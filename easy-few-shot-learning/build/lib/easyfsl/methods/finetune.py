@@ -53,23 +53,23 @@ class Finetune(FewShotClassifier):
         Then classify w.r.t. to cosine distance to prototypes.
         """
         query_features = self.compute_features(query_images)
-
+        #print(self.mask)
         with torch.enable_grad():
             self.prototypes.requires_grad_()
             optimizer = torch.optim.Adam([self.prototypes], lr=self.fine_tuning_lr)
             for _ in range(self.fine_tuning_steps):
                 support_logits = self.cosine_distance_to_prototypes(
-                    self.support_features
+                    self.support_features.cuda() * self.mask.cuda()
                 )
                 loss = nn.functional.cross_entropy(
-                    self.temperature * support_logits, self.support_labels
+                    self.temperature * support_logits, self.support_labels.cuda()
                 )
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
         return self.softmax_if_specified(
-            self.cosine_distance_to_prototypes(query_features),
+            self.cosine_distance_to_prototypes(query_features.cuda()),
             temperature=self.temperature,
         ).detach()
 

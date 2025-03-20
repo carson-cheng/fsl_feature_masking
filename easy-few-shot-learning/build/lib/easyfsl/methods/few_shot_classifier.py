@@ -90,12 +90,14 @@ class FewShotClassifier(nn.Module):
         Returns:
             features of shape (n_images, feature_dimension)
         """
-        original_features = self.backbone(images)
+        device = torch.device('cuda')
+        original_features = self.backbone(images.to(device))
         centered_features = original_features - self.feature_centering
         if self.feature_normalization is not None:
             return nn.functional.normalize(
                 centered_features, p=self.feature_normalization, dim=1
             )
+        self.prototypes, self.mask, self.svc = compute_prototypes(self.support_features, support_labels)
         return centered_features
 
     def softmax_if_specified(self, output: Tensor, temperature: float = 1.0) -> Tensor:
@@ -144,11 +146,12 @@ class FewShotClassifier(nn.Module):
             support_images: images of the support set of shape (n_support, **image_shape)
             support_labels: labels of support set images of shape (n_support, )
         """
+        #print("Hello!")
         self.support_labels = support_labels
         self.support_features = self.compute_features(support_images)
         self._raise_error_if_features_are_multi_dimensional(self.support_features)
-        self.prototypes = compute_prototypes(self.support_features, support_labels)
-
+        self.prototypes, self.mask, self.svc = compute_prototypes(self.support_features, support_labels)
+        
     @staticmethod
     def _raise_error_if_features_are_multi_dimensional(features: Tensor):
         if len(features.shape) != 2:

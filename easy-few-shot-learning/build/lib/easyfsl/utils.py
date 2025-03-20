@@ -54,6 +54,8 @@ def predict_embeddings(
     dataloader: DataLoader,
     model: nn.Module,
     device: Optional[str] = None,
+    fn1: Optional[str] = None,
+    fn2: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Predict embeddings for a dataloader.
@@ -67,20 +69,29 @@ def predict_embeddings(
     """
     all_embeddings = []
     all_class_names = []
-    with torch.no_grad():
-        for images, class_names in tqdm(
-            dataloader, unit="batch", desc="Predicting embeddings"
-        ):
-            if device is not None:
-                images = images.to(device)
-            all_embeddings.append(model(images).detach().cpu())
-            if isinstance(class_names, torch.Tensor):
-                all_class_names += class_names.tolist()
-            else:
-                all_class_names += class_names
-
-    concatenated_embeddings = torch.cat(all_embeddings)
-
+    try:
+        concatenated_embeddings = torch.load(fn1)
+        all_class_names = torch.load(fn2).tolist()
+        print("Files loaded!")
+    except:
+        print("Files not found, regenerating embeddings")
+        with torch.no_grad():
+            for images, class_names in tqdm(
+                dataloader, unit="batch", desc="Predicting embeddings"
+            ):
+                if device is not None:
+                    images = images.to(device)
+                all_embeddings.append(model(images).detach().cpu())
+                if isinstance(class_names, torch.Tensor):
+                    all_class_names += class_names.tolist()
+                else:
+                    all_class_names += class_names
+    
+        concatenated_embeddings = torch.cat(all_embeddings)
+        if fn1 is not None and fn2 is not None:
+            print("Saving files")
+            torch.save(concatenated_embeddings, fn1)
+            torch.save(torch.tensor(all_class_names), fn2)
     return pd.DataFrame(
         {"embedding": list(concatenated_embeddings), "class_name": all_class_names}
     )
@@ -100,8 +111,10 @@ def evaluate_on_one_task(
     model.process_support_set(support_images, support_labels)
     predictions = model(query_images).detach().data
     number_of_correct_predictions = int(
-        (torch.max(predictions, 1)[1] == query_labels).sum().item()
+        (torch.max(predictions.cpu(), 1)[1] == query_labels).sum().item()
     )
+    #print(torch.max(predictions, 1)[1])
+    #print(query_labels)
     return number_of_correct_predictions, len(query_labels)
 
 
@@ -146,6 +159,7 @@ def evaluate(
                 query_labels,
                 _,
             ) in tqdm_eval:
+                #raise KeyboardInterrupt
                 correct, total = evaluate_on_one_task(
                     model,
                     support_images.to(device),
@@ -156,6 +170,7 @@ def evaluate(
 
                 total_predictions += total
                 correct_predictions += correct
+                #correct_predictions = 0
 
                 # Log accuracy in real time
                 tqdm_eval.set_postfix(accuracy=correct_predictions / total_predictions)
