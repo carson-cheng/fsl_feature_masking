@@ -13,7 +13,7 @@ This repository contains experiments and tests on feature masking applied to Pro
 ### Installation
 
 1. Clone the repository:
-   ```git clone https://github.com/yourusername/enhancing-prototypical-networks.git
+   ```git clone https://github.com/carson-cheng/fsl_feature_masking.git
    cd enhancing-prototypical-networks```
 2. Install the required dependencies:
    ```pip install -r requirements.txt```
