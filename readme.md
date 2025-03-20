@@ -1,14 +1,12 @@
 # Enhancing Prototypical Networks with Feature Masking
 
-This repository contains experiments and tests on feature masking applied to Prototypical Networks and other few-shot learning paradigms using the `easyfsl` library. The goal is to explore how feature masking can improve the performance of few-shot learning models.
+This repository contains experiments and tests on feature masking applied to prototypical networks and other few-shot learning paradigms using the `easyfsl` library. The goal is to explore how feature masking can improve the performance of few-shot learning models.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.x
-- `easyfsl` library
-- Kaggle API (for dataset downloads)
 
 ### Installation
 
@@ -19,7 +17,8 @@ This repository contains experiments and tests on feature masking applied to Pro
    ```
 2. Install the required dependencies:
    ```
-   pip install -r requirements.txt
+   cd easy-few-shot-learning
+   pip install .
    ```
 ### Running the Experiments
 
